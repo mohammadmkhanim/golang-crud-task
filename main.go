@@ -21,7 +21,9 @@ func main() {
 	MigrateDatabase(connectionString)
 
 	taskRepository := repositories.NewTaskRepository(conn)
+
 	taskService := services.NewTaskService(taskRepository)
+
 	taskHandler := handlers.NewTaskHandler(taskService)
 
 	http.HandleFunc("/tasks/create", taskHandler.CreateTask)

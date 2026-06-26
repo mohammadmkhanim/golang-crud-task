@@ -3,6 +3,7 @@ package handlers
 import (
 	"TaskCrud/data/models"
 	"TaskCrud/services"
+	"TaskCrud/validations"
 	"encoding/json"
 	"net/http"
 )
@@ -16,11 +17,24 @@ func NewTaskHandler(s *services.TaskService) *TaskHandler {
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+	if !CheckHttpMethod(w, r, http.MethodPost) {
+		return
+	}
+
 	var task models.Task
 
-	json.NewDecoder(r.Body).Decode(&task)
+	err := json.NewDecoder(r.Body).Decode(&task)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
 
-	err := h.service.CreateTask(r.Context(), &task)
+	if err := validations.ValidateCreateTask(&task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.CreateTask(r.Context(), &task)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -30,6 +44,10 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	if !CheckHttpMethod(w, r, http.MethodGet) {
+		return
+	}
+
 	tasks, err := h.service.GetAll(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -40,11 +58,15 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	if !CheckHttpMethod(w, r, http.MethodGet) {
+		return
+	}
+
 	id := r.URL.Query().Get("id")
 
 	task, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, "Failed to find the task", http.StatusNotFound)
 		return
 	}
 
@@ -52,40 +74,49 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !CheckHttpMethod(w, r, http.MethodPut) {
 		return
 	}
 
 	var task models.Task
 
-	// decode request body
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// validation: ID is required
-	if task.ID == "" {
-		http.Error(w, "task id is required", http.StatusBadRequest)
+	if err := validations.ValidateUpdateTask(&task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// call service
-	err = h.service.UpdateTask(r.Context(), &task)
+	existingTask, ok := h.CheckExistTask(w, r, task.ID)
+	if !ok {
+		return
+	}
+
+	err = h.service.UpdateTask(r.Context(), existingTask, &task)
 	if err != nil {
 		http.Error(w, "Failed to update task", http.StatusInternalServerError)
 		return
 	}
 
-	// return updated object
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
 }
 
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	if !CheckHttpMethod(w, r, http.MethodDelete) {
+		return
+	}
+
 	id := r.URL.Query().Get("id")
+
+	_, ok := h.CheckExistTask(w, r, id)
+	if !ok {
+		return
+	}
 
 	err := h.service.DeleteTask(r.Context(), id)
 	if err != nil {
@@ -94,4 +125,21 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *TaskHandler) CheckExistTask(w http.ResponseWriter, r *http.Request, id string) (*models.Task, bool) {
+	existingTask, err := h.service.GetByID(r.Context(), id)
+	if existingTask == nil || err != nil {
+		http.Error(w, "Failed to find the task", http.StatusNotFound)
+		return nil, false
+	}
+	return existingTask, true
+}
+
+func CheckHttpMethod(w http.ResponseWriter, r *http.Request, method string) bool {
+	if r.Method != method {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return false
+	}
+	return true
 }
