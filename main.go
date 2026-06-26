@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
@@ -13,11 +13,12 @@ import (
 )
 
 func main() {
-	conn, err := pgx.Connect(context.Background(),
-		"postgres://admin:admin123@localhost:5432/taskdb?sslmode=disable")
+	var connectionString string = "postgres://admin:admin123@localhost:5432/taskdb?sslmode=disable"
+	conn, err := pgx.Connect(context.Background(), connectionString)
 	if err != nil {
 		panic(err)
 	}
+	MigrateDatabase(connectionString)
 
 	taskRepository := repositories.NewTaskRepository(conn)
 	taskService := services.NewTaskService(taskRepository)
@@ -29,6 +30,6 @@ func main() {
 	http.HandleFunc("/tasks/update", taskHandler.UpdateTask)
 	http.HandleFunc("/tasks/delete", taskHandler.Delete)
 
-	fmt.Println("Server running on :8080")
+	log.Println("Server running on :8080")
 	http.ListenAndServe(":8080", nil)
 }
