@@ -1,20 +1,34 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+
+	"github.com/jackc/pgx/v5"
+
+	"TaskCrud/data/repositories"
+	"TaskCrud/handlers"
+	"TaskCrud/services"
 )
 
-//TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
-// the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
 func main() {
-	//TIP <p>Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined text
-	// to see how GoLand suggests fixing the warning.</p><p>Alternatively, if available, click the lightbulb to view possible fixes.</p>
-	s := "gopher"
-	fmt.Printf("Hello and welcome, %s!\n", s)
-
-	for i := 1; i <= 5; i++ {
-		//TIP <p>To start your debugging session, right-click your code in the editor and select the Debug option.</p> <p>We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-		// for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.</p>
-		fmt.Println("i =", 100/i)
+	conn, err := pgx.Connect(context.Background(),
+		"postgres://admin:admin123@localhost:5432/taskdb?sslmode=disable")
+	if err != nil {
+		panic(err)
 	}
+
+	taskRepository := repositories.NewTaskRepository(conn)
+	taskService := services.NewTaskService(taskRepository)
+	taskHandler := handlers.NewTaskHandler(taskService)
+
+	http.HandleFunc("/tasks/create", taskHandler.CreateTask)
+	http.HandleFunc("/tasks/all", taskHandler.GetAll)
+	http.HandleFunc("/tasks/get", taskHandler.GetByID)
+	http.HandleFunc("/tasks/update", taskHandler.UpdateTask)
+	http.HandleFunc("/tasks/delete", taskHandler.Delete)
+
+	fmt.Println("Server running on :8080")
+	http.ListenAndServe(":8080", nil)
 }
