@@ -20,7 +20,9 @@ func NewTaskHandler(s *services.TaskService) *TaskHandler {
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-	if !CheckHttpMethod(w, r, http.MethodPost) {
+	utils.LogInfo("CreateTask", "handling create task request")
+
+	if !checkHttpMethod(w, r, http.MethodPost) {
 		return
 	}
 
@@ -66,10 +68,14 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		"Task created successfully",
 		res,
 	)
+
+	utils.LogSuccess("CreateTask", "task created successfully with id {0}", task.ID)
 }
 
 func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	if !CheckHttpMethod(w, r, http.MethodGet) {
+	utils.LogInfo("GetAll", "handling get all tasks request")
+
+	if !checkHttpMethod(w, r, http.MethodGet) {
 		return
 	}
 
@@ -92,10 +98,14 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		"Tasks retrieved successfully",
 		&res,
 	)
+
+	utils.LogSuccess("GetAll", "retrieved {0} tasks successfully", len(tasks))
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	if !CheckHttpMethod(w, r, http.MethodGet) {
+	utils.LogInfo("GetByID", "handling get task by id request")
+
+	if !checkHttpMethod(w, r, http.MethodGet) {
 		return
 	}
 
@@ -119,10 +129,14 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		"Task retrieved successfully",
 		res,
 	)
+
+	utils.LogSuccess("GetByID", "task {0} retrieved successfully", id)
 }
 
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
-	if !CheckHttpMethod(w, r, http.MethodPut) {
+	utils.LogInfo("UpdateTask", "handling update task request")
+
+	if !checkHttpMethod(w, r, http.MethodPut) {
 		return
 	}
 
@@ -149,7 +163,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	task := utils.MapUpdateTaskReq(&req)
 
-	existingTask, ok := h.CheckExistTask(w, r, task.ID)
+	existingTask, ok := h.checkExistTask(w, r, task.ID)
 	if !ok {
 		return
 	}
@@ -168,16 +182,20 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		"Task updated successfully",
 		res,
 	)
+
+	utils.LogSuccess("UpdateTask", "task {0} updated successfully", task.ID)
 }
 
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if !CheckHttpMethod(w, r, http.MethodDelete) {
+	utils.LogInfo("Delete", "handling delete task request")
+
+	if !checkHttpMethod(w, r, http.MethodDelete) {
 		return
 	}
 
 	id := r.URL.Query().Get("id")
 
-	_, ok := h.CheckExistTask(w, r, id)
+	_, ok := h.checkExistTask(w, r, id)
 	if !ok {
 		return
 	}
@@ -194,9 +212,11 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		"Task deleted successfully",
 		nil,
 	)
+
+	utils.LogSuccess("Delete", "task {0} deleted successfully", id)
 }
 
-func (h *TaskHandler) CheckExistTask(w http.ResponseWriter, r *http.Request, id string) (*models.Task, bool) {
+func (h *TaskHandler) checkExistTask(w http.ResponseWriter, r *http.Request, id string) (*models.Task, bool) {
 	existingTask, err := h.service.GetByID(r.Context(), id)
 	if existingTask == nil || err != nil {
 		DTOs.Error(
@@ -209,7 +229,7 @@ func (h *TaskHandler) CheckExistTask(w http.ResponseWriter, r *http.Request, id 
 	return existingTask, true
 }
 
-func CheckHttpMethod(w http.ResponseWriter, r *http.Request, method string) bool {
+func checkHttpMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 	if r.Method != method {
 		DTOs.Error(
 			w,

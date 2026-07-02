@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
@@ -10,9 +9,12 @@ import (
 	"TaskCrud/data/repositories"
 	"TaskCrud/handlers"
 	"TaskCrud/services"
+	"TaskCrud/utils"
 )
 
 func main() {
+	utils.LogInfo("main", "starting application")
+
 	var connectionString string = "postgres://admin:admin123@localhost:5432/taskdb?sslmode=disable"
 	conn, err := pgx.Connect(context.Background(), connectionString)
 	if err != nil {
@@ -33,6 +35,6 @@ func main() {
 	http.HandleFunc("/tasks/update", taskHandler.UpdateTask)
 	http.HandleFunc("/tasks/delete", taskHandler.Delete)
 
-	log.Println("Server running on :8080")
+	utils.LogInfo("main", "server running on :8080")
 	http.ListenAndServe(":8080", nil)
 }
