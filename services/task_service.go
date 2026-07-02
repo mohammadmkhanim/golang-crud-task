@@ -26,8 +26,8 @@ func (s *TaskService) CreateTask(ctx context.Context, t *models.Task) error {
 	return s.taskRepository.Create(ctx, t)
 }
 
-func (s *TaskService) GetAll(ctx context.Context) ([]models.Task, error) {
-	return s.taskRepository.GetAll(ctx)
+func (s *TaskService) GetAll(ctx context.Context, status *models.TaskStatus) ([]models.Task, error) {
+	return s.taskRepository.GetAll(ctx, status)
 }
 
 func (s *TaskService) GetByID(ctx context.Context, id string) (*models.Task, error) {

@@ -34,8 +34,16 @@ func (r *TaskRepository) Create(ctx context.Context, t *models.Task) error {
 	return err
 }
 
-func (r *TaskRepository) GetAll(ctx context.Context) ([]models.Task, error) {
-	rows, err := r.db.Query(ctx, "SELECT id, title, description, status, created_at, updated_at, deleted_at FROM tasks WHERE deleted_at IS NULL")
+func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus) ([]models.Task, error) {
+	query := "SELECT id, title, description, status, created_at, updated_at, deleted_at FROM tasks WHERE deleted_at IS NULL"
+
+	args := []any{}
+	if status != nil {
+		query += " AND status = $1"
+		args = append(args, *status)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		utils.LogError("TaskRepository.GetAll", "failed to query tasks: {0}", err)
 		return nil, err

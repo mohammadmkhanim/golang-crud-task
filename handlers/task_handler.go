@@ -79,7 +79,21 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := h.service.GetAll(r.Context())
+	var statusFilter *models.TaskStatus
+	if statusParam := r.URL.Query().Get("status"); statusParam != "" {
+		status := models.TaskStatus(statusParam)
+		if !status.IsValidStatus() {
+			DTOs.Error(
+				w,
+				http.StatusBadRequest,
+				"Invalid status filter",
+			)
+			return
+		}
+		statusFilter = &status
+	}
+
+	tasks, err := h.service.GetAll(r.Context(), statusFilter)
 	if err != nil {
 		DTOs.Error(
 			w,
