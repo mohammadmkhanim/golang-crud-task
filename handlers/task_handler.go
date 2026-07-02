@@ -93,7 +93,20 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		statusFilter = &status
 	}
 
-	tasks, err := h.service.GetAll(r.Context(), statusFilter)
+	order := models.Asc
+	if orderParam := r.URL.Query().Get("order"); orderParam != "" {
+		order = models.SortOrder(orderParam)
+		if !order.IsValidSortOrder() {
+			DTOs.Error(
+				w,
+				http.StatusBadRequest,
+				"Invalid order parameter, must be 'asc' or 'desc'",
+			)
+			return
+		}
+	}
+
+	tasks, err := h.service.GetAll(r.Context(), statusFilter, order)
 	if err != nil {
 		DTOs.Error(
 			w,

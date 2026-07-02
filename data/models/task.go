@@ -19,6 +19,22 @@ func (s TaskStatus) IsValidStatus() bool {
 	}
 }
 
+type SortOrder string
+
+const (
+	Asc  SortOrder = "asc"
+	Desc SortOrder = "desc"
+)
+
+func (o SortOrder) IsValidSortOrder() bool {
+	switch o {
+	case Asc, Desc:
+		return true
+	default:
+		return false
+	}
+}
+
 type Task struct {
 	ID          string     `json:"id"`
 	Title       string     `json:"title"`

@@ -5,6 +5,7 @@ import (
 	"TaskCrud/utils"
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -34,7 +35,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *models.Task) error {
 	return err
 }
 
-func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus) ([]models.Task, error) {
+func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus, order models.SortOrder) ([]models.Task, error) {
 	query := "SELECT id, title, description, status, created_at, updated_at, deleted_at FROM tasks WHERE deleted_at IS NULL"
 
 	args := []any{}
@@ -42,6 +43,8 @@ func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus) 
 		query += " AND status = $1"
 		args = append(args, *status)
 	}
+
+	query += " ORDER BY created_at " + strings.ToUpper(string(order))
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
