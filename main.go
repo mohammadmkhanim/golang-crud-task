@@ -26,6 +26,7 @@ func main() {
 
 	taskHandler := handlers.NewTaskHandler(taskService)
 
+	// TODO - get id from the path, not query parameter
 	http.HandleFunc("/tasks/create", taskHandler.CreateTask)
 	http.HandleFunc("/tasks/all", taskHandler.GetAll)
 	http.HandleFunc("/tasks/get", taskHandler.GetByID)

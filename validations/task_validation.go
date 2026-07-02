@@ -2,37 +2,21 @@ package validations
 
 import (
 	"TaskCrud/data/models"
-	"errors"
+
+	"github.com/go-playground/validator/v10"
 )
 
-func isValidStatus(status models.TaskStatus) bool {
-	switch status {
-	case models.Todo, models.InProgress, models.Done:
-		return true
-	default:
+var Validate = validator.New()
+
+func init() {
+	Validate.RegisterValidation("taskstatus", validateTaskStatus)
+}
+
+func validateTaskStatus(fl validator.FieldLevel) bool {
+	status, ok := fl.Field().Interface().(models.TaskStatus)
+	if !ok {
 		return false
 	}
-}
 
-func ValidateCreateTask(task *models.Task) error {
-	if task.Title == "" {
-		return errors.New("title is required")
-	}
-	if !isValidStatus(task.Status) {
-		return errors.New("invalid status")
-	}
-	return nil
-}
-
-func ValidateUpdateTask(task *models.Task) error {
-	if task.ID == "" {
-		return errors.New("id is required")
-	}
-	if task.Title == "" {
-		return errors.New("title is required")
-	}
-	if !isValidStatus(task.Status) {
-		return errors.New("invalid status")
-	}
-	return nil
+	return status.IsValidStatus()
 }

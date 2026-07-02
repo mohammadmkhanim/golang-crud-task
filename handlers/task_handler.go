@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"TaskCrud/DTOs/requests"
 	"TaskCrud/data/models"
 	"TaskCrud/services"
 	"TaskCrud/validations"
@@ -21,17 +22,22 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var task models.Task
-
-	err := json.NewDecoder(r.Body).Decode(&task)
+	var req requests.CreateTaskRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err := validations.ValidateCreateTask(&task); err != nil {
+	if err := validations.Validate.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	task := models.Task{
+		Title:       req.Title,
+		Description: req.Description,
+		Status:      req.Status,
 	}
 
 	err = h.service.CreateTask(r.Context(), &task)
@@ -78,17 +84,23 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var task models.Task
-
-	err := json.NewDecoder(r.Body).Decode(&task)
+	var req requests.UpdateTaskRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err := validations.ValidateUpdateTask(&task); err != nil {
+	if err := validations.Validate.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	task := models.Task{
+		ID:          req.ID,
+		Title:       req.Title,
+		Description: req.Description,
+		Status:      req.Status,
 	}
 
 	existingTask, ok := h.CheckExistTask(w, r, task.ID)
