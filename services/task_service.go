@@ -26,8 +26,8 @@ func (s *TaskService) CreateTask(ctx context.Context, t *models.Task) error {
 	return s.taskRepository.Create(ctx, t)
 }
 
-func (s *TaskService) GetAll(ctx context.Context, status *models.TaskStatus, order models.SortOrder) ([]models.Task, error) {
-	return s.taskRepository.GetAll(ctx, status, order)
+func (s *TaskService) GetAll(ctx context.Context, status *models.TaskStatus, order models.SortOrder, page int, pageSize int) ([]models.Task, int64, error) {
+	return s.taskRepository.GetAll(ctx, status, order, page, pageSize)
 }
 
 func (s *TaskService) GetByID(ctx context.Context, id string) (*models.Task, error) {

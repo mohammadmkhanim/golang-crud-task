@@ -3,12 +3,20 @@ package handlers
 import (
 	"TaskCrud/DTOs"
 	"TaskCrud/DTOs/requests"
+	"TaskCrud/DTOs/responses"
 	"TaskCrud/data/models"
 	"TaskCrud/services"
 	"TaskCrud/utils"
 	"TaskCrud/validations"
 	"encoding/json"
 	"net/http"
+	"strconv"
+)
+
+const (
+	defaultPage     = 1
+	defaultPageSize = 10
+	maxPageSize     = 100
 )
 
 type TaskHandler struct {
@@ -106,7 +114,35 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tasks, err := h.service.GetAll(r.Context(), statusFilter, order)
+	page := defaultPage
+	if pageParam := r.URL.Query().Get("page"); pageParam != "" {
+		parsedPage, err := strconv.Atoi(pageParam)
+		if err != nil || parsedPage < 1 {
+			DTOs.Error(
+				w,
+				http.StatusBadRequest,
+				"Invalid page parameter, must be a positive integer",
+			)
+			return
+		}
+		page = parsedPage
+	}
+
+	pageSize := defaultPageSize
+	if pageSizeParam := r.URL.Query().Get("pageSize"); pageSizeParam != "" {
+		parsedPageSize, err := strconv.Atoi(pageSizeParam)
+		if err != nil || parsedPageSize < 1 || parsedPageSize > maxPageSize {
+			DTOs.Error(
+				w,
+				http.StatusBadRequest,
+				"Invalid pageSize parameter, must be an integer between 1 and 100",
+			)
+			return
+		}
+		pageSize = parsedPageSize
+	}
+
+	tasks, totalItems, err := h.service.GetAll(r.Context(), statusFilter, order, page, pageSize)
 	if err != nil {
 		DTOs.Error(
 			w,
@@ -117,7 +153,17 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := utils.ToTasksRes(tasks)
+	totalPages := int((totalItems + int64(pageSize) - 1) / int64(pageSize))
+
+	res := responses.PaginatedResponse[responses.TaskResponse]{
+		Items: utils.ToTasksRes(tasks),
+		Pagination: responses.PaginationMeta{
+			Page:       page,
+			PageSize:   pageSize,
+			TotalItems: totalItems,
+			TotalPages: totalPages,
+		},
+	}
 
 	DTOs.Success(
 		w,
@@ -126,7 +172,7 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		&res,
 	)
 
-	utils.LogSuccess("GetAll", "retrieved {0} tasks successfully", len(tasks))
+	utils.LogSuccess("GetAll", "retrieved {0} of {1} tasks successfully (page {2})", len(tasks), totalItems, page)
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {

@@ -5,6 +5,7 @@ import (
 	"TaskCrud/utils"
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -35,21 +36,31 @@ func (r *TaskRepository) Create(ctx context.Context, t *models.Task) error {
 	return err
 }
 
-func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus, order models.SortOrder) ([]models.Task, error) {
-	query := "SELECT id, title, description, status, created_at, updated_at, deleted_at FROM tasks WHERE deleted_at IS NULL"
+func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus, order models.SortOrder, page int, pageSize int) ([]models.Task, int64, error) {
+	where := "WHERE deleted_at IS NULL"
 
 	args := []any{}
 	if status != nil {
-		query += " AND status = $1"
+		where += " AND status = $1"
 		args = append(args, *status)
 	}
 
+	var totalItems int64
+	err := r.db.QueryRow(ctx, "SELECT COUNT(*) FROM tasks "+where, args...).Scan(&totalItems)
+	if err != nil {
+		utils.LogError("TaskRepository.GetAll", "failed to count tasks: {0}", err)
+		return nil, 0, err
+	}
+
+	query := "SELECT id, title, description, status, created_at, updated_at, deleted_at FROM tasks " + where
 	query += " ORDER BY created_at " + strings.ToUpper(string(order))
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, pageSize, (page-1)*pageSize)
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		utils.LogError("TaskRepository.GetAll", "failed to query tasks: {0}", err)
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -60,14 +71,14 @@ func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus, 
 		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
 		if err != nil {
 			utils.LogError("TaskRepository.GetAll", "failed to scan task row: {0}", err)
-			return nil, err
+			return nil, 0, err
 		}
 		tasks = append(tasks, t)
 	}
 
-	utils.LogSuccess("TaskRepository.GetAll", "fetched {0} tasks from database", len(tasks))
+	utils.LogSuccess("TaskRepository.GetAll", "fetched {0} of {1} tasks from database (page {2})", len(tasks), totalItems, page)
 
-	return tasks, nil
+	return tasks, totalItems, nil
 }
 
 func (r *TaskRepository) GetByID(ctx context.Context, id string) (*models.Task, error) {
