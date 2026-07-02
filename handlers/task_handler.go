@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"TaskCrud/DTOs"
 	"TaskCrud/DTOs/requests"
 	"TaskCrud/data/models"
 	"TaskCrud/services"
+	"TaskCrud/utils"
 	"TaskCrud/validations"
 	"encoding/json"
 	"net/http"
@@ -22,31 +24,46 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req requests.CreateTaskRequest
+	var req requests.CreateTaskReq
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		DTOs.Error(
+			w,
+			http.StatusBadRequest,
+			"Invalid request body",
+		)
 		return
 	}
 
 	if err := validations.Validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		DTOs.Error(
+			w,
+			http.StatusBadRequest,
+			"Validation failed",
+			utils.MapValidationErrors(err)...,
+		)
 		return
 	}
 
-	task := models.Task{
-		Title:       req.Title,
-		Description: req.Description,
-		Status:      req.Status,
-	}
+	task := utils.MapCreateTaskReq(&req)
 
-	err = h.service.CreateTask(r.Context(), &task)
+	err = h.service.CreateTask(r.Context(), task)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		DTOs.Error(
+			w,
+			http.StatusInternalServerError,
+			"Failed to create task",
+			err.Error(),
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(task)
+	DTOs.Success(
+		w,
+		http.StatusCreated,
+		"Task created successfully",
+		task,
+	)
 }
 
 func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -56,11 +73,21 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	tasks, err := h.service.GetAll(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		DTOs.Error(
+			w,
+			http.StatusInternalServerError,
+			"Failed to retrieve tasks",
+			err.Error(),
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(tasks)
+	DTOs.Success(
+		w,
+		http.StatusOK,
+		"Tasks retrieved successfully",
+		&tasks,
+	)
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -72,11 +99,20 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	task, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Failed to find the task", http.StatusNotFound)
+		DTOs.Error(
+			w,
+			http.StatusNotFound,
+			"Task not found",
+		)
 		return
 	}
 
-	json.NewEncoder(w).Encode(task)
+	DTOs.Success(
+		w,
+		http.StatusOK,
+		"Task retrieved successfully",
+		task,
+	)
 }
 
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
@@ -84,38 +120,47 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req requests.UpdateTaskRequest
+	var req requests.UpdateTaskReq
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		DTOs.Error(
+			w,
+			http.StatusBadRequest,
+			"Invalid request body",
+		)
 		return
 	}
 
 	if err := validations.Validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		DTOs.Error(
+			w,
+			http.StatusBadRequest,
+			"Validation failed",
+			utils.MapValidationErrors(err)...,
+		)
 		return
 	}
 
-	task := models.Task{
-		ID:          req.ID,
-		Title:       req.Title,
-		Description: req.Description,
-		Status:      req.Status,
-	}
+	task := utils.MapUpdateTaskReq(&req)
 
 	existingTask, ok := h.CheckExistTask(w, r, task.ID)
 	if !ok {
 		return
 	}
 
-	err = h.service.UpdateTask(r.Context(), existingTask, &task)
+	err = h.service.UpdateTask(r.Context(), existingTask, task)
 	if err != nil {
 		http.Error(w, "Failed to update task", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(task)
+	DTOs.Success(
+		w,
+		http.StatusOK,
+		"Task updated successfully",
+		task,
+	)
 }
 
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -136,13 +181,22 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	DTOs.Success[any](
+		w,
+		http.StatusOK,
+		"Task deleted successfully",
+		nil,
+	)
 }
 
 func (h *TaskHandler) CheckExistTask(w http.ResponseWriter, r *http.Request, id string) (*models.Task, bool) {
 	existingTask, err := h.service.GetByID(r.Context(), id)
 	if existingTask == nil || err != nil {
-		http.Error(w, "Failed to find the task", http.StatusNotFound)
+		DTOs.Error(
+			w,
+			http.StatusNotFound,
+			"Task not found",
+		)
 		return nil, false
 	}
 	return existingTask, true
@@ -150,7 +204,11 @@ func (h *TaskHandler) CheckExistTask(w http.ResponseWriter, r *http.Request, id 
 
 func CheckHttpMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 	if r.Method != method {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		DTOs.Error(
+			w,
+			http.StatusMethodNotAllowed,
+			"Method not allowed",
+		)
 		return false
 	}
 	return true
