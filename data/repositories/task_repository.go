@@ -5,6 +5,7 @@ import (
 	"TaskCrud/utils"
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -34,7 +35,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *models.Task) error {
 }
 
 func (r *TaskRepository) GetAll(ctx context.Context) ([]models.Task, error) {
-	rows, err := r.db.Query(ctx, "SELECT id, title, description, status, created_at, updated_at FROM tasks")
+	rows, err := r.db.Query(ctx, "SELECT id, title, description, status, created_at, updated_at, deleted_at FROM tasks WHERE deleted_at IS NULL")
 	if err != nil {
 		utils.LogError("TaskRepository.GetAll", "failed to query tasks: {0}", err)
 		return nil, err
@@ -45,7 +46,7 @@ func (r *TaskRepository) GetAll(ctx context.Context) ([]models.Task, error) {
 
 	for rows.Next() {
 		var t models.Task
-		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt)
+		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
 		if err != nil {
 			utils.LogError("TaskRepository.GetAll", "failed to scan task row: {0}", err)
 			return nil, err
@@ -62,12 +63,12 @@ func (r *TaskRepository) GetByID(ctx context.Context, id string) (*models.Task, 
 	var t models.Task
 
 	query := `
-	SELECT id, title, description, status, created_at, updated_at
-	FROM tasks WHERE id=$1
+	SELECT id, title, description, status, created_at, updated_at, deleted_at
+	FROM tasks WHERE id=$1 AND deleted_at IS NULL
 	`
 
 	err := r.db.QueryRow(ctx, query, id).
-		Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt)
+		Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -85,7 +86,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *models.Task) error {
 	query := `
 	UPDATE tasks
 	SET title=$1, description=$2, status=$3, updated_at=$4
-	WHERE id=$5
+	WHERE id=$5 AND deleted_at IS NULL
 	`
 
 	_, err := r.db.Exec(ctx, query,
@@ -98,8 +99,8 @@ func (r *TaskRepository) Update(ctx context.Context, t *models.Task) error {
 	return err
 }
 
-func (r *TaskRepository) Delete(ctx context.Context, id string) error {
-	_, err := r.db.Exec(ctx, "DELETE FROM tasks WHERE id=$1", id)
+func (r *TaskRepository) Delete(ctx context.Context, id string, deletedAt time.Time) error {
+	_, err := r.db.Exec(ctx, "UPDATE tasks SET deleted_at=$1 WHERE id=$2 AND deleted_at IS NULL", deletedAt, id)
 	if err != nil {
 		utils.LogError("TaskRepository.Delete", "failed to delete task {0}: {1}", id, err)
 	}

@@ -44,5 +44,5 @@ func (s *TaskService) UpdateTask(ctx context.Context, t *models.Task, input *mod
 }
 
 func (s *TaskService) DeleteTask(ctx context.Context, id string) error {
-	return s.taskRepository.Delete(ctx, id)
+	return s.taskRepository.Delete(ctx, id, utils.NowUTC())
 }
