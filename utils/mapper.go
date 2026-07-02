@@ -2,6 +2,7 @@ package utils
 
 import (
 	"TaskCrud/DTOs/requests"
+	"TaskCrud/DTOs/responses"
 	"TaskCrud/data/models"
 	"fmt"
 
@@ -23,6 +24,25 @@ func MapUpdateTaskReq(req *requests.UpdateTaskReq) *models.Task {
 		Description: req.Description,
 		Status:      req.Status,
 	}
+}
+
+func ToTaskRes(task *models.Task) *responses.TaskResponse {
+	return &responses.TaskResponse{
+		ID:          task.ID,
+		Title:       task.Title,
+		Description: task.Description,
+		Status:      string(task.Status),
+	}
+}
+
+func ToTasksRes(tasks []models.Task) []responses.TaskResponse {
+	result := make([]responses.TaskResponse, len(tasks))
+
+	for i, task := range tasks {
+		result[i] = *ToTaskRes(&task)
+	}
+
+	return result
 }
 
 // TODO - is there better soloution than hardcoding?

@@ -58,11 +58,13 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	res := utils.ToTaskRes(task)
+
 	DTOs.Success(
 		w,
 		http.StatusCreated,
 		"Task created successfully",
-		task,
+		res,
 	)
 }
 
@@ -82,11 +84,13 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	res := utils.ToTasksRes(tasks)
+
 	DTOs.Success(
 		w,
 		http.StatusOK,
 		"Tasks retrieved successfully",
-		&tasks,
+		&res,
 	)
 }
 
@@ -107,11 +111,13 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	res := utils.ToTaskRes(task)
+
 	DTOs.Success(
 		w,
 		http.StatusOK,
 		"Task retrieved successfully",
-		task,
+		res,
 	)
 }
 
@@ -154,12 +160,13 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	res := utils.ToTaskRes(task)
+
 	DTOs.Success(
 		w,
 		http.StatusOK,
 		"Task updated successfully",
-		task,
+		res,
 	)
 }
 

@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type ApiResponse[T any] struct {
+type BaseRes[T any] struct {
 	Success    bool     `json:"success"`
 	StatusCode int      `json:"statusCode"`
 	Message    string   `json:"message,omitempty"`
@@ -17,7 +17,7 @@ func Success[T any](w http.ResponseWriter, statusCode int, message string, data 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	json.NewEncoder(w).Encode(ApiResponse[T]{
+	json.NewEncoder(w).Encode(BaseRes[T]{
 		Success:    true,
 		StatusCode: statusCode,
 		Message:    message,
@@ -29,7 +29,7 @@ func Error(w http.ResponseWriter, statusCode int, message string, errors ...stri
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	json.NewEncoder(w).Encode(ApiResponse[any]{
+	json.NewEncoder(w).Encode(BaseRes[any]{
 		Success:    false,
 		StatusCode: statusCode,
 		Message:    message,
