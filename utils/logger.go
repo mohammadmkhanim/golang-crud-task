@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"strings"
-	"time"
 )
 
 type Level string
@@ -35,7 +34,7 @@ func log(level Level, operation string, msg string, args ...any) {
 	finalMsg := formatLogMessage(msg, args...)
 
 	fmt.Printf("%s | %s | %s | %s\n",
-		time.Now().Format("2006-01-02 15:04:05"),
+		NowUTC().Format("2006-01-02 15:04:05"),
 		level,
 		operation,
 		finalMsg,

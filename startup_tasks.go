@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"TaskCrud/utils"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -14,14 +14,16 @@ func MigrateDatabase(dbURL string) {
 		dbURL,
 	)
 	if err != nil {
-		log.Fatal("migration init failed:", err)
+		utils.LogError("MigrateDatabase", "migration init failed: {0}", err)
+		panic(err)
 	}
 
 	err = m.Up()
 
 	if err != nil && err != migrate.ErrNoChange {
-		log.Fatal("migration failed:", err)
+		utils.LogError("MigrateDatabase", "migration failed: {0}", err)
+		panic(err)
 	}
 
-	log.Println("migrations completed (or already up to date)")
+	utils.LogSuccess("MigrateDatabase", "migrations completed (or already up to date)")
 }
