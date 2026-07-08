@@ -27,10 +27,6 @@ func NewTaskHandler(s *services.TaskService) *TaskHandler {
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request, req requests.CreateTaskReq) {
 	utils.LogInfo("CreateTask", "handling create task request")
 
-	if !checkHttpMethod(w, r, http.MethodPost) {
-		return
-	}
-
 	task := utils.MapCreateTaskReq(&req)
 
 	err := h.service.CreateTask(r.Context(), task)
@@ -58,10 +54,6 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request, req req
 
 func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("GetAll", "handling get all tasks request")
-
-	if !checkHttpMethod(w, r, http.MethodGet) {
-		return
-	}
 
 	query, errMsg := parseTaskListQuery(r)
 	if errMsg != "" {
@@ -107,10 +99,6 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("GetByID", "handling get task by id request")
 
-	if !checkHttpMethod(w, r, http.MethodGet) {
-		return
-	}
-
 	id := r.URL.Query().Get("id")
 
 	task, err := h.service.GetByID(r.Context(), id)
@@ -137,10 +125,6 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request, req requests.UpdateTaskReq) {
 	utils.LogInfo("UpdateTask", "handling update task request")
-
-	if !checkHttpMethod(w, r, http.MethodPut) {
-		return
-	}
 
 	task := utils.MapUpdateTaskReq(&req)
 
@@ -169,10 +153,6 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request, req req
 
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("Delete", "handling delete task request")
-
-	if !checkHttpMethod(w, r, http.MethodDelete) {
-		return
-	}
 
 	id := r.URL.Query().Get("id")
 
@@ -208,16 +188,4 @@ func (h *TaskHandler) checkExistTask(w http.ResponseWriter, r *http.Request, id 
 		return nil, false
 	}
 	return existingTask, true
-}
-
-func checkHttpMethod(w http.ResponseWriter, r *http.Request, method string) bool {
-	if r.Method != method {
-		DTOs.Error(
-			w,
-			http.StatusMethodNotAllowed,
-			"Method not allowed",
-		)
-		return false
-	}
-	return true
 }

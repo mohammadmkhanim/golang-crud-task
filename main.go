@@ -31,11 +31,11 @@ func main() {
 	taskHandler := handlers.NewTaskHandler(taskService)
 
 	// TODO - get id from the path, not query parameter
-	http.HandleFunc("/tasks/create", middlewares.WithValidatedBody[requests.CreateTaskReq](taskHandler.CreateTask))
-	http.HandleFunc("/tasks/all", taskHandler.GetAll)
-	http.HandleFunc("/tasks/get", taskHandler.GetByID)
-	http.HandleFunc("/tasks/update", middlewares.WithValidatedBody[requests.UpdateTaskReq](taskHandler.UpdateTask))
-	http.HandleFunc("/tasks/delete", taskHandler.Delete)
+	http.HandleFunc("/tasks/create", middlewares.RequireMethod(http.MethodPost, middlewares.WithValidatedBody[requests.CreateTaskReq](taskHandler.CreateTask)))
+	http.HandleFunc("/tasks/all", middlewares.RequireMethod(http.MethodGet, taskHandler.GetAll))
+	http.HandleFunc("/tasks/get", middlewares.RequireMethod(http.MethodGet, taskHandler.GetByID))
+	http.HandleFunc("/tasks/update", middlewares.RequireMethod(http.MethodPut, middlewares.WithValidatedBody[requests.UpdateTaskReq](taskHandler.UpdateTask)))
+	http.HandleFunc("/tasks/delete", middlewares.RequireMethod(http.MethodDelete, taskHandler.Delete))
 
 	utils.LogInfo("main", "server running on :8080")
 	http.ListenAndServe(":8080", nil)
