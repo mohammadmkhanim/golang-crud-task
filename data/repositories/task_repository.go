@@ -52,7 +52,7 @@ func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus, 
 		return nil, 0, err
 	}
 
-	query := "SELECT id, title, description, status, created_at, updated_at, deleted_at FROM tasks " + where
+	query := "SELECT id, title, description, status FROM tasks " + where
 	query += " ORDER BY created_at " + strings.ToUpper(string(order))
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
 	args = append(args, pageSize, (page-1)*pageSize)
@@ -68,7 +68,7 @@ func (r *TaskRepository) GetAll(ctx context.Context, status *models.TaskStatus, 
 
 	for rows.Next() {
 		var t models.Task
-		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
+		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Status)
 		if err != nil {
 			utils.LogError("TaskRepository.GetAll", "failed to scan task row: {0}", err)
 			return nil, 0, err
@@ -85,12 +85,12 @@ func (r *TaskRepository) GetByID(ctx context.Context, id string) (*models.Task, 
 	var t models.Task
 
 	query := `
-	SELECT id, title, description, status, created_at, updated_at, deleted_at
+	SELECT id, title, description, status
 	FROM tasks WHERE id=$1 AND deleted_at IS NULL
 	`
 
 	err := r.db.QueryRow(ctx, query, id).
-		Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
+		Scan(&t.ID, &t.Title, &t.Description, &t.Status)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
