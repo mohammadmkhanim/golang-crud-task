@@ -8,7 +8,6 @@ import (
 	"TaskCrud/services"
 	"TaskCrud/utils"
 	"net/http"
-	"strconv"
 )
 
 const (
@@ -64,62 +63,17 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var statusFilter *models.TaskStatus
-	if statusParam := r.URL.Query().Get("status"); statusParam != "" {
-		status := models.TaskStatus(statusParam)
-		if !status.IsValidStatus() {
-			DTOs.Error(
-				w,
-				http.StatusBadRequest,
-				"Invalid status filter",
-			)
-			return
-		}
-		statusFilter = &status
+	query, errMsg := parseTaskListQuery(r)
+	if errMsg != "" {
+		DTOs.Error(
+			w,
+			http.StatusBadRequest,
+			errMsg,
+		)
+		return
 	}
 
-	order := models.Asc
-	if orderParam := r.URL.Query().Get("order"); orderParam != "" {
-		order = models.SortOrder(orderParam)
-		if !order.IsValidSortOrder() {
-			DTOs.Error(
-				w,
-				http.StatusBadRequest,
-				"Invalid order parameter, must be 'asc' or 'desc'",
-			)
-			return
-		}
-	}
-
-	page := defaultPage
-	if pageParam := r.URL.Query().Get("page"); pageParam != "" {
-		parsedPage, err := strconv.Atoi(pageParam)
-		if err != nil || parsedPage < 1 {
-			DTOs.Error(
-				w,
-				http.StatusBadRequest,
-				"Invalid page parameter, must be a positive integer",
-			)
-			return
-		}
-		page = parsedPage
-	}
-
-	pageSize := defaultPageSize
-	if pageSizeParam := r.URL.Query().Get("pageSize"); pageSizeParam != "" {
-		parsedPageSize, err := strconv.Atoi(pageSizeParam)
-		if err != nil || parsedPageSize < 1 || parsedPageSize > maxPageSize {
-			DTOs.Error(
-				w,
-				http.StatusBadRequest,
-				"Invalid pageSize parameter, must be an integer between 1 and 100",
-			)
-			return
-		}
-		pageSize = parsedPageSize
-	}
-
-	tasks, totalItems, err := h.service.GetAll(r.Context(), statusFilter, order, page, pageSize)
+	tasks, totalItems, err := h.service.GetAll(r.Context(), query.Status, query.Order, query.Page, query.PageSize)
 	if err != nil {
 		DTOs.Error(
 			w,
@@ -130,15 +84,13 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalPages := int((totalItems + int64(pageSize) - 1) / int64(pageSize))
-
 	res := responses.PaginatedResponse[responses.TaskResponse]{
 		Items: utils.ToTasksRes(tasks),
 		Pagination: responses.PaginationMeta{
-			Page:       page,
-			PageSize:   pageSize,
+			Page:       query.Page,
+			PageSize:   query.PageSize,
 			TotalItems: totalItems,
-			TotalPages: totalPages,
+			TotalPages: utils.TotalPages(totalItems, query.PageSize),
 		},
 	}
 
@@ -149,7 +101,7 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		&res,
 	)
 
-	utils.LogSuccess("GetAll", "retrieved {0} of {1} tasks successfully (page {2})", len(tasks), totalItems, page)
+	utils.LogSuccess("GetAll", "retrieved {0} of {1} tasks successfully (page {2})", len(tasks), totalItems, query.Page)
 }
 
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
