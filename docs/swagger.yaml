@@ -1,0 +1,285 @@
+basePath: /
+definitions:
+  DTOs.BaseRes-any:
+    properties:
+      data: {}
+      errors:
+        items:
+          type: string
+        type: array
+      message:
+        type: string
+      statusCode:
+        type: integer
+      success:
+        type: boolean
+    type: object
+  DTOs.BaseRes-responses_PaginatedResponse-responses_TaskResponse:
+    properties:
+      data:
+        $ref: '#/definitions/responses.PaginatedResponse-responses_TaskResponse'
+      errors:
+        items:
+          type: string
+        type: array
+      message:
+        type: string
+      statusCode:
+        type: integer
+      success:
+        type: boolean
+    type: object
+  DTOs.BaseRes-responses_TaskResponse:
+    properties:
+      data:
+        $ref: '#/definitions/responses.TaskResponse'
+      errors:
+        items:
+          type: string
+        type: array
+      message:
+        type: string
+      statusCode:
+        type: integer
+      success:
+        type: boolean
+    type: object
+  models.TaskStatus:
+    enum:
+    - todo
+    - in_progress
+    - done
+    type: string
+    x-enum-varnames:
+    - Todo
+    - InProgress
+    - Done
+  requests.CreateTaskReq:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        enum:
+        - todo
+        - in_progress
+        - done
+      title:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - status
+    - title
+    type: object
+  requests.UpdateTaskReq:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      id:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/models.TaskStatus'
+        enum:
+        - todo
+        - in_progress
+        - done
+      title:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - id
+    - status
+    - title
+    type: object
+  responses.PaginatedResponse-responses_TaskResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/responses.TaskResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/responses.PaginationMeta'
+    type: object
+  responses.PaginationMeta:
+    properties:
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      totalItems:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  responses.TaskResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+info:
+  contact: {}
+  title: TaskCrud API
+  version: "1.0"
+paths:
+  /tasks/all:
+    get:
+      parameters:
+      - description: Filter by status
+        enum:
+        - todo
+        - in_progress
+        - done
+        in: query
+        name: status
+        type: string
+      - description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size (max 100)
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-responses_PaginatedResponse-responses_TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+      tags:
+      - tasks
+  /tasks/create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateTaskReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-responses_TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+      tags:
+      - tasks
+  /tasks/delete:
+    delete:
+      parameters:
+      - description: Task ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+      tags:
+      - tasks
+  /tasks/get:
+    get:
+      parameters:
+      - description: Task ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-responses_TaskResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+      tags:
+      - tasks
+  /tasks/update:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/requests.UpdateTaskReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-responses_TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/DTOs.BaseRes-any'
+      tags:
+      - tasks
+swagger: "2.0"

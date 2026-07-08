@@ -24,6 +24,14 @@ func NewTaskHandler(s *services.TaskService) *TaskHandler {
 	return &TaskHandler{service: s}
 }
 
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param request body requests.CreateTaskReq true "Task payload"
+// @Success 201 {object} DTOs.BaseRes[responses.TaskResponse]
+// @Failure 400 {object} DTOs.BaseRes[any]
+// @Failure 500 {object} DTOs.BaseRes[any]
+// @Router /tasks/create [post]
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request, req requests.CreateTaskReq) {
 	utils.LogInfo("CreateTask", "handling create task request")
 
@@ -52,6 +60,16 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request, req req
 	utils.LogSuccess("CreateTask", "task created successfully with id {0}", task.ID)
 }
 
+// @Tags tasks
+// @Produce json
+// @Param status query string false "Filter by status" Enums(todo, in_progress, done)
+// @Param order query string false "Sort order" Enums(asc, desc)
+// @Param page query int false "Page number"
+// @Param pageSize query int false "Page size (max 100)"
+// @Success 200 {object} DTOs.BaseRes[responses.PaginatedResponse[responses.TaskResponse]]
+// @Failure 400 {object} DTOs.BaseRes[any]
+// @Failure 500 {object} DTOs.BaseRes[any]
+// @Router /tasks/all [get]
 func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("GetAll", "handling get all tasks request")
 
@@ -96,6 +114,12 @@ func (h *TaskHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	utils.LogSuccess("GetAll", "retrieved {0} of {1} tasks successfully (page {2})", len(tasks), totalItems, query.Page)
 }
 
+// @Tags tasks
+// @Produce json
+// @Param id query string true "Task ID"
+// @Success 200 {object} DTOs.BaseRes[responses.TaskResponse]
+// @Failure 404 {object} DTOs.BaseRes[any]
+// @Router /tasks/get [get]
 func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("GetByID", "handling get task by id request")
 
@@ -123,6 +147,15 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	utils.LogSuccess("GetByID", "task {0} retrieved successfully", id)
 }
 
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param request body requests.UpdateTaskReq true "Task payload"
+// @Success 200 {object} DTOs.BaseRes[responses.TaskResponse]
+// @Failure 400 {object} DTOs.BaseRes[any]
+// @Failure 404 {object} DTOs.BaseRes[any]
+// @Failure 500 {object} DTOs.BaseRes[any]
+// @Router /tasks/update [put]
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request, req requests.UpdateTaskReq) {
 	utils.LogInfo("UpdateTask", "handling update task request")
 
@@ -151,6 +184,13 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request, req req
 	utils.LogSuccess("UpdateTask", "task {0} updated successfully", task.ID)
 }
 
+// @Tags tasks
+// @Produce json
+// @Param id query string true "Task ID"
+// @Success 200 {object} DTOs.BaseRes[any]
+// @Failure 404 {object} DTOs.BaseRes[any]
+// @Failure 500 {object} DTOs.BaseRes[any]
+// @Router /tasks/delete [delete]
 func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("Delete", "handling delete task request")
 

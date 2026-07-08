@@ -5,15 +5,19 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"TaskCrud/DTOs/requests"
 	"TaskCrud/data/repositories"
+	_ "TaskCrud/docs"
 	"TaskCrud/handlers"
 	"TaskCrud/middlewares"
 	"TaskCrud/services"
 	"TaskCrud/utils"
 )
 
+// @title TaskCrud API
+// @version 1.0
 func main() {
 	utils.LogInfo("main", "starting application")
 
@@ -36,6 +40,8 @@ func main() {
 	http.HandleFunc("/tasks/get", middlewares.RequireMethod(http.MethodGet, taskHandler.GetByID))
 	http.HandleFunc("/tasks/update", middlewares.RequireMethod(http.MethodPut, middlewares.WithValidatedBody[requests.UpdateTaskReq](taskHandler.UpdateTask)))
 	http.HandleFunc("/tasks/delete", middlewares.RequireMethod(http.MethodDelete, taskHandler.Delete))
+
+	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	utils.LogInfo("main", "server running on :8080")
 	http.ListenAndServe(":8080", nil)
