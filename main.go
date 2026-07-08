@@ -6,8 +6,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"TaskCrud/DTOs/requests"
 	"TaskCrud/data/repositories"
 	"TaskCrud/handlers"
+	"TaskCrud/middlewares"
 	"TaskCrud/services"
 	"TaskCrud/utils"
 )
@@ -29,10 +31,10 @@ func main() {
 	taskHandler := handlers.NewTaskHandler(taskService)
 
 	// TODO - get id from the path, not query parameter
-	http.HandleFunc("/tasks/create", taskHandler.CreateTask)
+	http.HandleFunc("/tasks/create", middlewares.WithValidatedBody[requests.CreateTaskReq](taskHandler.CreateTask))
 	http.HandleFunc("/tasks/all", taskHandler.GetAll)
 	http.HandleFunc("/tasks/get", taskHandler.GetByID)
-	http.HandleFunc("/tasks/update", taskHandler.UpdateTask)
+	http.HandleFunc("/tasks/update", middlewares.WithValidatedBody[requests.UpdateTaskReq](taskHandler.UpdateTask))
 	http.HandleFunc("/tasks/delete", taskHandler.Delete)
 
 	utils.LogInfo("main", "server running on :8080")

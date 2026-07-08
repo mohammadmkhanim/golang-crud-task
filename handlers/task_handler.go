@@ -7,8 +7,6 @@ import (
 	"TaskCrud/data/models"
 	"TaskCrud/services"
 	"TaskCrud/utils"
-	"TaskCrud/validations"
-	"encoding/json"
 	"net/http"
 	"strconv"
 )
@@ -27,37 +25,16 @@ func NewTaskHandler(s *services.TaskService) *TaskHandler {
 	return &TaskHandler{service: s}
 }
 
-func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request, req requests.CreateTaskReq) {
 	utils.LogInfo("CreateTask", "handling create task request")
 
 	if !checkHttpMethod(w, r, http.MethodPost) {
 		return
 	}
 
-	var req requests.CreateTaskReq
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		DTOs.Error(
-			w,
-			http.StatusBadRequest,
-			"Invalid request body",
-		)
-		return
-	}
-
-	if err := validations.Validate.Struct(req); err != nil {
-		DTOs.Error(
-			w,
-			http.StatusBadRequest,
-			"Validation failed",
-			utils.MapValidationErrors(err)...,
-		)
-		return
-	}
-
 	task := utils.MapCreateTaskReq(&req)
 
-	err = h.service.CreateTask(r.Context(), task)
+	err := h.service.CreateTask(r.Context(), task)
 	if err != nil {
 		DTOs.Error(
 			w,
@@ -206,31 +183,10 @@ func (h *TaskHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	utils.LogSuccess("GetByID", "task {0} retrieved successfully", id)
 }
 
-func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request, req requests.UpdateTaskReq) {
 	utils.LogInfo("UpdateTask", "handling update task request")
 
 	if !checkHttpMethod(w, r, http.MethodPut) {
-		return
-	}
-
-	var req requests.UpdateTaskReq
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		DTOs.Error(
-			w,
-			http.StatusBadRequest,
-			"Invalid request body",
-		)
-		return
-	}
-
-	if err := validations.Validate.Struct(req); err != nil {
-		DTOs.Error(
-			w,
-			http.StatusBadRequest,
-			"Validation failed",
-			utils.MapValidationErrors(err)...,
-		)
 		return
 	}
 
@@ -241,7 +197,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.UpdateTask(r.Context(), existingTask, task)
+	err := h.service.UpdateTask(r.Context(), existingTask, task)
 	if err != nil {
 		http.Error(w, "Failed to update task", http.StatusInternalServerError)
 		return
